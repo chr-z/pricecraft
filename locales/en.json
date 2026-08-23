@@ -1,0 +1,11 @@
+{
+  "appName": "PriceCraft",
+  "calcTitle": "Cost-Plus Pricing",
+  "costLabel": "Cost (USD)",
+  "markupLabel": "Markup (%)",
+  "calculateBtn": "Calculate Price",
+  "priceLabel": "Calculated Price",
+  "newCalcBtn": "New Calculation",
+  "footerBuilt": "Built by @chr-z",
+  "footerOffline": "Offline-first PWA"
+}
