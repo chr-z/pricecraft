@@ -1,43 +1,168 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PriceCraft - Pricing Calculator</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PriceCraft — Pricing calculator for makers</title>
+  <meta name="description" content="Cost-plus & value-based pricing calculator for makers. Free, private, offline-first PWA. No signup." />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f766e" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f766e'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23fff' font-family='Arial'%3E$%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header>
-    <h1>PriceCraft</h1>
-    <select id="locale-selector">
-      <option value="en">English</option>
-      <option value="pt-BR">Português</option>
-    </select>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">$</span>
+      <span class="name">PriceCraft</span>
+    </div>
+    <div class="controls">
+      <label class="sr-only" for="currency-select">Currency</label>
+      <select id="currency-select" title="Currency">
+        <option value="USD|en-US">USD $</option>
+        <option value="EUR|de-DE">EUR €</option>
+        <option value="GBP|en-GB">GBP £</option>
+        <option value="BRL|pt-BR">BRL R$</option>
+        <option value="JPY|ja-JP">JPY ¥</option>
+        <option value="INR|en-IN">INR ₹</option>
+      </select>
+      <select id="lang-select" title="Language"></select>
+    </div>
   </header>
+
   <main>
-    <section id="calculator">
-      <h2 id="calc-title">Cost-Plus Pricing</h2>
-      <div class="form-group">
-        <label for="cost">Cost (USD)</label>
-        <input type="number" id="cost" step="0.01" placeholder="e.g. 15.50">
-      </div>
-      <div class="form-group">
-        <label for="markup">Markup (%):</label>
-        <input type="number" id="markup" step="0.1" placeholder="e.g. 30">
-      </div>
-      <button id="calculate" class="btn">Calculate Price</button>
+    <section class="hero">
+      <h1 data-i18n="hero.title">Price your work with confidence</h1>
+      <p data-i18n="hero.subtitle">Two proven methods, instant results, zero signup — your numbers never leave this device.</p>
     </section>
-    <section id="results" style="display:none">
-      <h2 id="result-title"></h2>
-      <div class="price-display">$<span id="price">0.00</span></div>
-      <button id="new-calc" class="btn">New Calculation</button>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-costplus" aria-selected="true" data-i18n="tabs.costplus">Cost-plus</button>
+      <button role="tab" id="tab-value" aria-selected="false" data-i18n="tabs.value">Value-based</button>
+      <button role="tab" id="tab-breakeven" aria-selected="false" data-i18n="tabs.breakeven">Break-even</button>
+    </nav>
+
+    <!-- ============ COST PLUS ============ -->
+    <section id="panel-costplus" class="panel" role="tabpanel">
+      <form id="form-costplus" autocomplete="off">
+        <div class="grid">
+          <label><span data-i18n="cp.materials">Materials cost (per unit)</span>
+            <input type="number" id="cp-materials" min="0" step="any" placeholder="10.00" required />
+          </label>
+          <label><span data-i18n="cp.laborHours">Hours of work</span>
+            <input type="number" id="cp-laborHours" min="0" step="any" placeholder="2" required />
+          </label>
+          <label><span data-i18n="cp.hourlyRate">Your hourly rate</span>
+            <input type="number" id="cp-hourlyRate" min="0" step="any" placeholder="25.00" required />
+          </label>
+          <label><span data-i18n="cp.overhead">Overhead (%)</span>
+            <input type="number" id="cp-overheadPct" min="0" max="100" step="any" placeholder="15" />
+          </label>
+          <label><span data-i18n="cp.margin">Profit margin (%)</span>
+            <input type="number" id="cp-marginPct" min="0" max="99" step="any" placeholder="50" />
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary" data-i18n="cp.calc">Calculate price</button>
+          <button type="button" id="cp-save" data-i18n="common.save">Save scenario</button>
+        </div>
+      </form>
+      <div id="cp-result" class="result" hidden>
+        <div class="kpis">
+          <div class="kpi"><span class="kpi-label" data-i18n="cp.r.production">Production cost</span><strong id="cp-r-production"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="cp.r.overhead">Overhead</span><strong id="cp-r-overhead"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="cp.r.totalCost">Total cost</span><strong id="cp-r-totalcost"></strong></div>
+          <div class="kpi hero-kpi"><span class="kpi-label" data-i18n="cp.r.price">Suggested price</span><strong id="cp-r-price"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="cp.r.profit">Profit / unit</span><strong id="cp-r-profit"></strong></div>
+        </div>
+        <div class="ending-row">
+          <span data-i18n="cp.charmHint">Charm pricing:</span> <strong id="cp-charm"></strong>
+          <button type="button" id="cp-use-charm" class="mini" data-i18n="cp.useCharm">Use charm price</button>
+        </div>
+      </div>
+      <div id="cp-error" class="error-box" hidden></div>
+    </section>
+
+    <!-- ============ VALUE BASED ============ -->
+    <section id="panel-value" class="panel" role="tabpanel" hidden>
+      <form id="form-value" autocomplete="off">
+        <label><span data-i18n="vb.anchors">Competitor prices (comma-separated)</span>
+          <input type="text" id="vb-anchors" inputmode="decimal" placeholder="20, 30, 40" required />
+        </label>
+        <label><span data-i18n="vb.multiplier">Differentiation multiplier (0.5 – 3)</span>
+          <input type="number" id="vb-multiplier" min="0.1" max="10" step="0.05" value="1" />
+        </label>
+        <p class="hint" data-i18n="vb.hint">1.0 = same as the market median. Above 1 means customers perceive extra worth (quality, brand, speed); below 1 positions you as the budget option.</p>
+        <div class="actions">
+          <button type="submit" class="primary" data-i18n="vb.calc">Analyze market</button>
+          <button type="button" id="vb-save" data-i18n="common.save">Save scenario</button>
+        </div>
+      </form>
+      <div id="vb-result" class="result" hidden>
+        <div class="kpis">
+          <div class="kpi"><span class="kpi-label" data-i18n="vb.r.min">Cheapest competitor</span><strong id="vb-r-min"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="vb.r.median">Market median</span><strong id="vb-r-median"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="vb.r.max">Highest competitor</span><strong id="vb-r-max"></strong></div>
+          <div class="kpi hero-kpi"><span class="kpi-label" data-i18n="vb.r.ref">Your reference price</span><strong id="vb-r-ref"></strong></div>
+        </div>
+      </div>
+      <div id="vb-error" class="error-box" hidden></div>
+    </section>
+
+    <!-- ============ BREAK-EVEN ============ -->
+    <section id="panel-breakeven" class="panel" role="tabpanel" hidden>
+      <form id="form-breakeven" autocomplete="off">
+        <div class="grid">
+          <label><span data-i18n="be.fixed">Monthly fixed costs</span>
+            <input type="number" id="be-fixed" min="0" step="any" placeholder="1500" required />
+          </label>
+          <label><span data-i18n="be.price">Price per unit</span>
+            <input type="number" id="be-price" min="0" step="any" placeholder="45" required />
+          </label>
+          <label><span data-i18n="be.variable">Variable cost per unit</span>
+            <input type="number" id="be-variable" min="0" step="any" placeholder="30" required />
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary" data-i18n="be.calc">Compute break-even</button>
+          <button type="button" id="be-save" data-i18n="common.save">Save scenario</button>
+        </div>
+      </form>
+      <div id="be-result" class="result" hidden>
+        <div class="kpis">
+          <div class="kpi hero-kpi"><span class="kpi-label" data-i18n="be.r.units">Units to break even</span><strong id="be-r-units"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="be.r.revenue">Revenue at break-even</span><strong id="be-r-revenue"></strong></div>
+          <div class="kpi"><span class="kpi-label" data-i18n="be.r.contribution">Contribution per unit</span><strong id="be-r-contribution"></strong></div>
+        </div>
+        <p id="be-warn" class="hint warn" hidden data-i18n="be.warn">With this price below variable cost, every sale loses money — no volume fixes that.</p>
+      </div>
+      <div id="be-error" class="error-box" hidden></div>
+    </section>
+
+    <section class="saved">
+      <div class="saved-head">
+        <h2 data-i18n="saved.title">Saved scenarios</h2>
+        <div class="saved-actions">
+          <button type="button" id="btn-export" class="mini" data-i18n="saved.export">Export JSON</button>
+          <label class="mini file-btn" for="file-import" data-i18n="saved.import">Import JSON</label>
+          <input type="file" id="file-import" accept="application/json" hidden />
+          <button type="button" id="btn-clear" class="mini danger" data-i18n="saved.clear">Clear all</button>
+        </div>
+      </div>
+      <ul id="saved-list"></ul>
+      <p id="saved-empty" class="hint" data-i18n="saved.empty">Nothing saved yet — run a calculation and hit “Save scenario”.</p>
     </section>
   </main>
+
   <footer>
-    <p>Built by <a href="https://github.com/chr-z">@chr-z</a></p>
-    <p>Offline-first PWA</p>
+    <p>
+      <span data-i18n="footer.tag">Private by design — no account, no server, no tracking.</span>
+      Built by <a href="https://github.com/chr-z" rel="noopener">@chr-z</a> ·
+      <a href="https://github.com/chr-z/pricecraft" rel="noopener" data-i18n="footer.source">source</a>
+    </p>
   </footer>
-  <script src="js/app.js"></script>
+
+  <script src="js/i18n.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
