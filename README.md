@@ -62,7 +62,7 @@ breakEvenUnits = ceil(fixedCosts / (price − variableCost))
 referencePrice = median(competitorAnchors) × differentiationMultiplier
 ```
 
-Every formula is covered by **20 unit tests** running on Node's built-in test runner in CI.
+Every formula is covered by **19 unit tests** running on Node's built-in test runner in CI.
 
 ## 🚀 Quick start
 
