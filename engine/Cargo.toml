@@ -1,0 +1,19 @@
+[package]
+name = "pricecraft-engine"
+version = "2.0.0"
+edition = "2021"
+description = "PriceCraft pricing engine — pure Rust, compiled to WebAssembly"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+opt-level = "s"   # size-optimized for a lean .wasm artifact
+lto = true

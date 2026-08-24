@@ -4,15 +4,15 @@
 
 # 💲 PriceCraft
 
-**Cost-plus & value-based pricing calculator for makers — free, private, offline-first.**
-**Calculadora de preço custo+margem e valor percebido para artesãos e makers — grátis, privada, offline.**
+**Cost-plus & value-based pricing calculator for makers — powered by a Rust/WASM engine. Free, private, offline-first.**
+**Calculadora de preço custo+margem e valor percebido para artesãos e makers — motor de cálculo em Rust compilado para WebAssembly.**
 
 [![CI](https://github.com/chr-z/pricecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/chr-z/pricecraft/actions/workflows/ci.yml)
 [![Deploy](https://github.com/chr-z/pricecraft/actions/workflows/pages.yml/badge.svg)](https://github.com/chr-z/pricecraft/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-14b8a6.svg)](LICENSE)
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT--BR-blueviolet)](#internationalization--internacionaliza%C3%A7%C3%A3o)
-[![No deps](https://img.shields.io/badge/runtime%20deps-0-37d67a)](package.json)
-[![PWA](https://img.shields.io/badge/PWA-installable-9cf)](manifest.json)
+[![Rust](https://img.shields.io/badge/engine-Rust%20%E2%86%92%20WASM-dea584?logo=rust&logoColor=black)](engine/)
+[![PWA](https://img.shields.io/badge/PWA-installable-9cf)](public/manifest.json)
 
 🔗 **Live demo → [chr-z.github.io/pricecraft](https://chr-z.github.io/pricecraft/)** · no signup, works offline after first load
 
@@ -33,6 +33,23 @@ nobody's business but yours.
 > margem saudável, compara com o mercado e mostra o ponto de equilíbrio. Interface em português
 > ou inglês, moeda em R$, US$, €, £, ¥ ou ₹.
 
+## 🦀 Built with Rust → WebAssembly (v2)
+
+Every pricing formula lives in a **pure-Rust crate** ([`engine/`](engine/)) compiled to a
+27 KB `.wasm` binary via `wasm-bindgen` + `wasm-pack`. The TypeScript UI is a thin DOM layer —
+zero math in JS.
+
+```
+engine/src/lib.rs      ← all pricing math (cost-plus, value-based, break-even…)
+  └── wasm-pack build --target web
+        └── src/pkg/pricecraft_engine_bg.wasm   (27 KB, size-optimized)
+              └── imported by src/app.ts like any ES module
+```
+
+Why? Deterministic float handling, memory safety without a GC, and a typed boundary
+(`.d.ts` generated straight from Rust signatures). The same vectors are tested twice:
+16 native `cargo test` cases **plus** 17 Vitest cases running the actual compiled `.wasm`.
+
 ## ✨ Features
 
 | | |
@@ -45,24 +62,25 @@ nobody's business but yours.
 | 🌎 **EN / PT-BR interface** | Header switcher, persisted choice, plain JSON dictionaries — add a language by adding one file |
 | 💾 **Scenario library** | Save every calculation, export/import everything as JSON, delete what's stale |
 | 📲 **Installable PWA** | Manifest + service worker with stale-while-revalidate caching: opens offline, installs on phone/desktop |
-| 🛡️ **Private by design** | Zero runtime dependencies, zero network calls, zero cookies, zero telemetry |
+| 🛡️ **Private by design** | Zero network calls at runtime, zero cookies, zero telemetry — your inputs never leave the device |
 | ♿ **Accessible** | Keyboard-navigable tabs with ARIA roles, focus-visible rings, reduced-motion support |
 
 ## 🧠 How the math works (the senior-engineer part)
 
 Most pricing calculators do `cost × 1.5` and call it a day — that confuses **margin** with
-**markup**. PriceCraft gets it right:
+**markup**. PriceCraft gets it right (in Rust):
 
-```
-productionCost = materials + hours × hourlyRate
-totalCost      = productionCost × (1 + overhead%)
-suggestedPrice = totalCost / (1 − margin%)        ← margin on PRICE, not on cost
-profit         = suggestedPrice − totalCost
-breakEvenUnits = ceil(fixedCosts / (price − variableCost))
-referencePrice = median(competitorAnchors) × differentiationMultiplier
+```rust
+production_cost = materials + hours * hourly_rate;
+total_cost      = production_cost * (1.0 + overhead_pct / 100.0);
+suggested_price = total_cost / (1.0 - margin_pct / 100.0);   // margin on PRICE, not on cost
+profit          = suggested_price - total_cost;
+units           = (fixed_costs / (price - variable_cost)).ceil();
+reference_price = median(competitor_anchors) * differentiation_multiplier;
 ```
 
-Every formula is covered by **19 unit tests** running on Node's built-in test runner in CI.
+Every formula is covered by **16 native Rust tests + 17 Vitest tests on the compiled .wasm**
+— identical known-answer vectors in both worlds, enforced in CI.
 
 ## 🚀 Quick start
 
@@ -79,48 +97,32 @@ Every formula is covered by **19 unit tests** running on Node's built-in test ru
 
 ## 💰 Pricing
 
-| | Free | |
-|---|---|---|
-| Cost-plus calculator | ✅ unlimited | |
-| Value-based analyzer | ✅ unlimited | |
-| Break-even panel | ✅ unlimited | |
-| Saved scenarios + JSON export | ✅ unlimited | |
-| Currencies & languages | ✅ all 6 / both | |
-| Ads, accounts, tracking | ❌ never | **$0 forever** |
+PriceCraft itself is free forever — it's a portfolio piece, not a product.
+No premium tier, no locked features, no ads, no "pro" nag screen. Take the math, run your shop.
 
-A Pro tier (PDF price sheets, multi-product catalogs) may arrive post-v2 — see roadmap.
-
-## 🗺️ Roadmap
-
-- [x] v1 — cost-plus, value-based, break-even, charm endings, i18n, PWA
-- [ ] PDF price sheet export
-- [ ] Multi-product catalog with per-product margins
-- [ ] Margin ↔ markup converter widget
-- [ ] More locales (ES, DE) — community welcome
-
-## 🧑‍💻 For developers
+## 🛠️ Development
 
 ```bash
-git clone https://github.com/chr-z/pricecraft && cd pricecraft
-node --test tests/*.test.js     # run the business-logic suite (zero deps)
-python -m http.server 8080      # or any static server → http://localhost:8080
+# Prerequisites: Rust (stable + wasm32-unknown-unknown), wasm-pack, Node 22+
+
+wasm-pack build engine --target web --out-dir ../src/pkg --out-name pricecraft_engine
+npm install
+npm run dev            # Vite dev server with hot reload
+npm test               # Vitest against the real .wasm bundle
+cd engine && cargo test  # native Rust tests of the same vectors
+npm run build          # production build to dist/
 ```
 
-Project layout:
+## 🌎 Internationalization / Internacionalização
 
-```
-js/core.js    pure pricing functions (fully tested, DOM-free)
-js/app.js     UI wiring only
-js/i18n.js    dictionary loader + header switcher
-locales/      en.json, pt-BR.json — add a language by adding a file
-tests/        node:test suite over core.js
-```
+- `en.json` / `pt-BR.json` live in [`public/locales/`](public/locales/) as flat key-value dictionaries
+- The choice persists in `localStorage`; browser language auto-detects on first visit
+- Add a language by dropping one JSON file and one `<option>` in `src/main.ts`
 
-## Internationalization / Internacionalização
+## 📄 License
 
-Interface available in **English** and **Português (BR)**. The switcher lives in the header;
-the choice persists in `localStorage`. Dictionaries are plain JSON under [`locales/`](locales/).
+MIT — see [LICENSE](LICENSE).
 
-## License
+---
 
-[MIT](LICENSE) © Built by [@chr-z](https://github.com/chr-z)
+Built by [@chr-z](https://github.com/chr-z) · engine in 🦀 Rust → WASM · UI in TypeScript + Vite

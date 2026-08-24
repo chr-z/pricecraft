@@ -1,0 +1,17 @@
+{
+  "name": "pricecraft-engine",
+  "type": "module",
+  "description": "PriceCraft pricing engine — pure Rust, compiled to WebAssembly",
+  "version": "2.0.0",
+  "license": "MIT",
+  "files": [
+    "pricecraft_engine_bg.wasm",
+    "pricecraft_engine.js",
+    "pricecraft_engine.d.ts"
+  ],
+  "main": "pricecraft_engine.js",
+  "types": "pricecraft_engine.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

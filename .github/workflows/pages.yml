@@ -1,5 +1,4 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches: [main]
@@ -22,16 +21,40 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Tests before publishing
-        run: node --test tests/*.test.js
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            engine/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('engine/Cargo.lock') }}
+      - name: Install wasm-pack
+        run: |
+          curl -sSfL https://github.com/rustwasm/wasm-pack/releases/download/v0.13.1/wasm-pack-v0.13.1-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp
+          sudo cp /tmp/wasm-pack-v0.13.1-x86_64-unknown-linux-musl/wasm-pack /usr/local/bin/
+          wasm-pack --version
+      - name: Tests before publishing (native Rust + Vitest on .wasm)
+        run: |
+          cd engine && cargo test --quiet
+          cd ..
+          wasm-pack build engine --target web --out-dir ../src/pkg --out-name pricecraft_engine
+          npm install --no-audit --no-fund
+          npx tsc --noEmit && npx vitest run
+      - name: Build (Vite, includes the Rust/WASM engine bundle)
+        run: npx vite build
+      - name: Stamp service-worker cache version with commit SHA
+        run: sed -i "s|self.__PRICECRAFT_CACHE_VERSION__|'${GITHUB_SHA::7}'|" dist/sw.js
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Upload Pages artifact
+      - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4

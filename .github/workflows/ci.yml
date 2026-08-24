@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -12,12 +11,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run business-logic tests (zero dependencies)
-        run: node --test tests/*.test.js
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            engine/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('engine/Cargo.lock') }}
+      - name: Rust engine tests (native)
+        working-directory: engine
+        run: cargo test --quiet
+      - name: Install wasm-bindgen-cli (for tests) + wasm-pack (for build)
+        run: |
+          cargo install wasm-bindgen-cli --quiet || true
+          curl -sSfL https://github.com/rustwasm/wasm-pack/releases/download/v0.13.1/wasm-pack-v0.13.1-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp
+          sudo cp /tmp/wasm-pack-v0.13.1-x86_64-unknown-linux-musl/wasm-pack /usr/local/bin/
+          wasm-pack --version
+      - name: Build WASM engine (wasm-pack -> src/pkg)
+        run: wasm-pack build engine --target web --out-dir ../src/pkg --out-name pricecraft_engine
+      - name: Install node dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck (tsc --noEmit, strict)
+        run: npm run typecheck
+      - name: Vitest against the compiled .wasm bundle
+        run: npm test
+      - name: Production build
+        run: npm run build
       - name: Guard — no secrets committed
         run: |
-          ! grep -rniE '(api[_-]?key|secret|password)\s*[:=]' js/ locales/ *.json 2>/dev/null || true
-          echo "ok: no secrets found"
+          ! grep -rInE '(BEGIN (RSA|EC|OPENSSH) PRIVATE KEY|ghp_[A-Za-z0-9]{36}|sk-[A-Za-z0-9]{20,})' . --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=target \
+            || (echo 'potential secret found' && exit 1)
+      - name: Validate JSON assets
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('public/manifest.json','utf8')); console.log('manifest ok')"
+          node -e "for (const f of ['public/locales/en.json','public/locales/pt-BR.json']) JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('locales ok')"

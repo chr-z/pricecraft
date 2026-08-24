@@ -1,13 +1,33 @@
 {
   "name": "pricecraft",
-  "version": "1.0.0",
-  "description": "Cost-plus & value-based pricing calculator for makers. 100% static, zero runtime dependencies.",
+  "version": "2.0.0",
+  "description": "Cost-plus & value-based pricing calculator for makers. Rust/WASM pricing engine, TypeScript UI.",
   "private": true,
+  "type": "module",
   "scripts": {
-    "test": "node --test tests/"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "engine:test": "cd engine && cargo test",
+    "engine:build": "wasm-pack build engine --target web --out-dir ../src/pkg --out-name pricecraft_engine"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "license": "MIT"
+  "keywords": [
+    "pricing-calculator",
+    "cost-plus",
+    "break-even",
+    "rust",
+    "wasm",
+    "pwa",
+    "i18n"
+  ],
+  "author": "chr-z",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vite": "^5.4.19",
+    "vitest": "^2.1.9"
+  }
 }
