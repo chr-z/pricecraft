@@ -10,6 +10,8 @@ const ASSETS = [
   './locales/en.json',
   './locales/pt-BR.json',
   './manifest.json',
+  './js/pay.js',
+  './upgrade.html',
 ];
 
 self.addEventListener('install', (e) => {

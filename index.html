@@ -28,7 +28,8 @@
       </select>
       <select id="lang-select" title="Language"></select>
     </div>
-  </header>
+      <a href="upgrade.html" style="margin-left:.6rem;padding:.38rem .85rem;border-radius:8px;background:#0f766e;color:#fff;font-weight:700;text-decoration:none;font-size:.85rem;white-space:nowrap" data-i18n="nav.pro">Pro</a>
+</header>
 
   <main>
     <section class="hero">
@@ -163,5 +164,10 @@
   </footer>
 
   <script type="module" src="/src/main.ts"></script>
+  <script>
+    // Pay Module: CONFIG antes do pay.js (o IIFE lê na execução).
+    window.PAY_CONFIG = { product: 'pricecraft', plan: 'pro', apiBase: 'https://chrz-dev.pages.dev', verifyKey: '' };
+  </script>
+  <script src="js/pay.js"></script>
 </body>
 </html>
